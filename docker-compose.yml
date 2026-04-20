@@ -1,0 +1,179 @@
+services:
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: faz2_loki
+    ports:
+      - "3100:3100"
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ./loki-config.yml:/etc/loki/config.yml:ro
+      - ./data/loki:/loki
+
+  vector:
+    image: timberio/vector:0.42.0-alpine
+    container_name: faz2_vector
+    ports:
+      - "8686:8686"
+    command: ["--config", "/etc/vector/vector.toml"]
+    volumes:
+      - ./vector.toml:/etc/vector/vector.toml:ro
+      - ./data:/data
+    depends_on:
+      - loki
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: faz2_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+    depends_on:
+      - anomaly_app
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: faz2_alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: faz2_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+
+  # Hem yük üreten (yük yükselince alert tetiklenecek) hem de /metrics yayınlayan demo servis.
+  anomaly_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.anomaly_app
+    container_name: faz2_anomaly_app
+    environment:
+      METRICS_PORT: "8000"
+      MEM_LOW_MB: "60"
+      MEM_HIGH_MB: "320"
+      MEM_HIGH_AFTER_SEC: "15"
+      MEM_HIGH_DURATION_SEC: "25"
+      CPU_HIGH_AFTER_SEC: "15"
+      CPU_HIGH_DURATION_SEC: "25"
+      DEMO_ALWAYS_ON: "false"
+      DEMO_MODE: "cycle"
+      CYCLE_PERIOD_SEC: "30"
+      MEM_HIGH_START: "0"
+      MEM_HIGH_END: "12"
+      CPU_HIGH_START: "12"
+      CPU_HIGH_END: "24"
+    ports:
+      - "8000:8000"
+
+  # Alertmanager webhook'la buraya POST atacak; konteyner loglarından somut çıktıyı göreceksin.
+  alert_receiver:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook_receiver
+    container_name: faz2_alert_receiver
+    environment:
+      PORT: "9001"
+      HISTORY_PATH: "/data/alert_history.jsonl"
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./data:/data
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: faz2_ui
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: "4000"
+      PROMETHEUS_URL: "http://prometheus:9090"
+      ALERTMANAGER_URL: "http://alertmanager:9093"
+      HISTORY_PATH: "/data/alert_history.jsonl"
+      ANNOTATIONS_DB: "/data/annotations.db"
+      TEMPLATES_PATH: "/data/drain3_templates.jsonl"
+    depends_on:
+      - prometheus
+      - alertmanager
+    volumes:
+      - ./data:/data
+
+  log_generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.log_generator
+    container_name: faz2_log_generator
+    environment:
+      LOG_PATH: "/data/app.log"
+      CYCLE_PERIOD_SEC: "30"
+      ANOMALY_START_SEC: "20"
+      ANOMALY_END_SEC: "30"
+      LOG_INTERVAL_SEC: "0.2"
+    volumes:
+      - ./data:/data
+    depends_on:
+      - vector
+
+  log_anomaly_ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.log_anomaly_ml
+    container_name: faz2_log_anomaly_ml
+    environment:
+      LOG_PATH: "/data/app.log"
+      METRICS_PORT: "8200"
+      BASELINE_LOGS: "300"
+      WINDOW_SIZE: "200"
+      ANOMALY_PERCENTILE: "20"
+    volumes:
+      - ./data:/data
+
+  drain3:
+    build:
+      context: .
+      dockerfile: Dockerfile.drain3
+    container_name: faz2_drain3
+    environment:
+      LOKI_URL: "http://loki:3100"
+      LOKI_QUERY: '{service="log_generator"}'
+      METRICS_PORT: "8300"
+      POLL_SEC: "2"
+      LOOKBACK_SEC: "60"
+      STATE_PATH: "/data/drain3_state.bin"
+      TEMPLATES_PATH: "/data/drain3_templates.jsonl"
+    depends_on:
+      - loki
+    volumes:
+      - ./data:/data
+
+  logbert_trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.logbert_trainer
+    container_name: faz2_logbert_trainer
+    environment:
+      DATA_DIR: "/data"
+      LOGBERT_BASE_MODEL: "prajjwal1/bert-tiny"
+      LOGBERT_EPOCHS: "1"
+      LOGBERT_BATCH_SIZE: "16"
+      LOGBERT_MAX_ROWS: "1200"
+    volumes:
+      - ./data:/data
+

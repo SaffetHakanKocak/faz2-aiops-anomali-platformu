@@ -1,0 +1,17 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir prometheus_client scikit-learn numpy
+
+COPY log_anomaly_ml.py /app/log_anomaly_ml.py
+
+ENV LOG_PATH=/data/app.log
+ENV METRICS_PORT=8200
+
+ENV BASELINE_LOGS=300
+ENV WINDOW_SIZE=200
+ENV ANOMALY_PERCENTILE=5
+
+CMD ["python", "/app/log_anomaly_ml.py"]
+

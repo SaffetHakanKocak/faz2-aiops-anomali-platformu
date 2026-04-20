@@ -1,0 +1,48 @@
+groups:
+  - name: faz2_anomaly_alerts
+    rules:
+      - alert: MemoryHigh
+        expr: anomaly_memory_target_bytes > 200000000
+        for: 5s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Bellek yüksek (RSS)"
+          description: "anomaly_memory_target_bytes > 200000000 bytes"
+
+      - alert: CpuHigh
+        expr: anomaly_cpu_percent > 5
+        for: 5s
+        labels:
+          severity: critical
+        annotations:
+          summary: "CPU yüksek (process)"
+          description: "anomaly_cpu_percent > 5"
+
+      - alert: LatencyHigh
+        expr: anomaly_latency_ms > 400
+        for: 3s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Latency yüksek"
+          description: "anomaly_latency_ms > 400 ms"
+
+      - alert: ErrorRateHigh
+        expr: anomaly_error_rate > 0.05
+        for: 3s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Error rate yüksek"
+          description: "anomaly_error_rate > 0.05"
+
+      - alert: LogAnomalyHigh
+        expr: log_anomaly_rate > 0.2
+        for: 5s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Log anomali yüksek"
+          description: "log_anomaly_rate > 0.2"
+

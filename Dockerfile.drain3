@@ -1,0 +1,19 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir prometheus_client requests drain3
+
+COPY drain3_service.py /app/drain3_service.py
+
+ENV LOKI_URL=http://loki:3100
+ENV LOKI_QUERY={service="log_generator"}
+ENV METRICS_PORT=8300
+ENV POLL_SEC=2
+ENV LOOKBACK_SEC=60
+
+ENV STATE_PATH=/data/drain3_state.bin
+ENV TEMPLATES_PATH=/data/drain3_templates.jsonl
+
+CMD ["python", "/app/drain3_service.py"]
+

@@ -1,0 +1,12 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir prometheus_client psutil
+
+COPY anomaly_app.py /app/anomaly_app.py
+
+ENV METRICS_PORT=8000
+
+CMD ["python", "/app/anomaly_app.py"]
+

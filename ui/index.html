@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Faz 2 - Yalın Anomali X UI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        background: #0b1220;
+        color: #e6edf3;
+      }
+      header {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 18px 20px 30px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 14px;
+      }
+      .card {
+        grid-column: span 12;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 14px 14px 10px;
+      }
+      .card h2 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 650;
+        letter-spacing: 0.2px;
+        color: rgba(230, 237, 243, 0.95);
+      }
+      .two {
+        grid-column: span 6;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      button {
+        background: #2f81f7;
+        border: 0;
+        color: white;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 12px;
+      }
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        color: rgba(230, 237, 243, 0.9);
+        font-weight: 650;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        font-weight: 650;
+        font-size: 12px;
+      }
+      .critical {
+        background: rgba(255, 0, 70, 0.16);
+        border-color: rgba(255, 0, 70, 0.4);
+      }
+      .warning {
+        background: rgba(255, 187, 0, 0.16);
+        border-color: rgba(255, 187, 0, 0.4);
+      }
+      .muted {
+        color: rgba(230, 237, 243, 0.7);
+      }
+      canvas {
+        max-height: 260px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:18px;font-weight:800;">Faz 2 - Anomali X</div>
+          <div class="muted" id="statusText">UI ayağa kalkıyor...</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button id="reloadBtn">Yenile</button>
+        </div>
+      </div>
+    </header>
+    <div class="wrap">
+      <div class="grid">
+        <div class="card two">
+          <h2>Anomali X: Hedef Bellek</h2>
+          <canvas id="memChart"></canvas>
+        </div>
+        <div class="card two">
+          <h2>Anomali X: CPU (Process)</h2>
+          <canvas id="cpuChart"></canvas>
+        </div>
+        <div class="card two">
+          <h2>Anomali X: Latency (ms)</h2>
+          <canvas id="latencyChart"></canvas>
+        </div>
+        <div class="card two">
+          <h2>Anomali X: Error Rate</h2>
+          <canvas id="errorChart"></canvas>
+        </div>
+        <div class="card two">
+          <h2>Anomali X: Log Anomali Rate</h2>
+          <canvas id="logChart"></canvas>
+        </div>
+
+        <div class="card" style="grid-column: span 12;">
+          <div class="row">
+            <h2 style="margin:0;">Aktif Alertler (Alertmanager)</h2>
+            <div class="muted" id="alertsUpdatedAt"></div>
+          </div>
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Durum</th>
+                  <th>Alert Adı</th>
+                  <th>Şiddet</th>
+                  <th>Özet</th>
+                  <th>Başlangıç</th>
+                </tr>
+              </thead>
+              <tbody id="alertsBody">
+                <tr>
+                  <td colspan="5" class="muted">Şu an veri yok.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="row" style="margin-bottom:6px;">
+              <h2 style="margin:0;font-size:14px;">Geçmiş Alertler</h2>
+              <div class="muted" id="historyUpdatedAt"></div>
+            </div>
+            <div style="overflow:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Durum</th>
+                    <th>Alert Adı</th>
+                    <th>Şiddet</th>
+                    <th>Özet</th>
+                    <th>Alınma</th>
+                  </tr>
+                </thead>
+                <tbody id="historyBody">
+                  <tr>
+                    <td colspan="5" class="muted">Henüz geçmiş yok.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="muted" style="margin-top:10px;font-size:12px;">
+            Not: Prometheus alert tetiklenirse buraya yansır.
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: span 12;">
+          <div class="row">
+            <h2 style="margin:0;">Template Etiketleme (Drain3)</h2>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="muted" id="templatesUpdatedAt"></div>
+              <button id="refreshTemplatesBtn">Template Yenile</button>
+            </div>
+          </div>
+          <div class="muted" style="margin-bottom:10px;">
+            Son template’leri listeler. Her cluster için normal/anomaly seçip kaydedebilirsin.
+          </div>
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cluster</th>
+                  <th>Template</th>
+                  <th>Label</th>
+                  <th>Not</th>
+                  <th>Kaydet</th>
+                </tr>
+              </thead>
+              <tbody id="templatesBody">
+                <tr>
+                  <td colspan="5" class="muted">Template yükleniyor...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const fmtBytes = (b) => {
+        if (b === null || b === undefined) return '-';
+        const units = ['B','KB','MB','GB','TB'];
+        let i=0; let v=b;
+        while (v>=1024 && i<units.length-1){v/=1024;i++;}
+        return v.toFixed(1) + ' ' + units[i];
+      };
+
+      function makeChart(ctx, label, color) {
+        return new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [{
+              label,
+              data: [],
+              borderColor: color,
+              backgroundColor: color,
+              pointRadius: 0,
+              borderWidth: 2,
+              tension: 0.25
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: 'rgba(230,237,243,0.9)' } }
+            },
+            scales: {
+              x: { ticks: { color: 'rgba(230,237,243,0.7)' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              y: { ticks: { color: 'rgba(230,237,243,0.7)' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+            }
+          }
+        });
+      }
+
+      const memChart = makeChart(document.getElementById('memChart'), 'Hedef Bellek (bytes)', 'rgba(47,129,247,1)');
+      const cpuChart = makeChart(document.getElementById('cpuChart'), 'CPU %', 'rgba(255,187,0,1)');
+      const latencyChart = makeChart(document.getElementById('latencyChart'), 'Latency (ms)', 'rgba(153,102,255,1)');
+      const errorChart = makeChart(document.getElementById('errorChart'), 'Error rate (0-1)', 'rgba(255,99,132,1)');
+      const logChart = makeChart(document.getElementById('logChart'), 'Log anomaly rate (0-1)', 'rgba(0, 200, 130, 1)');
+
+      async function fetchSeries(metric) {
+        const r = await fetch(`/api/series?metric=${encodeURIComponent(metric)}&seconds=120&step=2`);
+        if (!r.ok) throw new Error('series fetch failed');
+        return await r.json();
+      }
+
+      async function fetchAlerts() {
+        const r = await fetch('/api/alerts');
+        if (!r.ok) throw new Error('alerts fetch failed');
+        return await r.json();
+      }
+
+      async function fetchHistory() {
+        const r = await fetch('/api/alert_history?limit=60');
+        if (!r.ok) throw new Error('alert history fetch failed');
+        return await r.json();
+      }
+
+      async function fetchTemplates() {
+        const r = await fetch('/api/templates?limit=50');
+        if (!r.ok) throw new Error('templates fetch failed');
+        return await r.json();
+      }
+
+      async function fetchAnnotation(clusterId) {
+        const r = await fetch(`/api/annotations/${clusterId}`);
+        if (!r.ok) return { annotation: null };
+        return await r.json();
+      }
+
+      async function saveAnnotation(clusterId, label, note) {
+        const r = await fetch(`/api/annotations/${clusterId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label, note })
+        });
+        if (!r.ok) throw new Error('save failed');
+        return await r.json();
+      }
+
+      function setAlertsTable(alertsPayload) {
+        const alertsBody = document.getElementById('alertsBody');
+        alertsBody.innerHTML = '';
+        const alerts = (alertsPayload && alertsPayload.alerts) ? alertsPayload.alerts : [];
+
+        if (!alerts.length) {
+          alertsBody.innerHTML = '<tr><td colspan="5" class="muted">Şu an aktif alert yok.</td></tr>';
+          return;
+        }
+
+        for (const a of alerts) {
+          const labels = a.labels || {};
+          const annotations = a.annotations || {};
+          const severity = labels.severity || '-';
+          const status = (a.status && a.status.state) ? a.status.state : '-';
+          const summary = annotations.summary || '-';
+          const startedAt = a.startsAt ? new Date(a.startsAt).toLocaleTimeString() : '-';
+
+          const badgeClass = severity === 'critical' ? 'badge critical' : (severity === 'warning' ? 'badge warning' : 'badge');
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${status}</td>
+            <td>${a.labels.alertname || '-'}</td>
+            <td><span class="${badgeClass}">${severity}</span></td>
+            <td>${summary}</td>
+            <td>${startedAt}</td>
+          `;
+          alertsBody.appendChild(tr);
+        }
+      }
+
+      function setHistoryTable(historyPayload) {
+        const historyBody = document.getElementById('historyBody');
+        historyBody.innerHTML = '';
+        const events = (historyPayload && historyPayload.events) ? historyPayload.events : [];
+
+        if (!events.length) {
+          historyBody.innerHTML = '<tr><td colspan="5" class="muted">Henüz geçmiş yok.</td></tr>';
+          return;
+        }
+
+        for (const e of events) {
+          const severity = e.severity || '-';
+          const status = e.status || '-';
+          const summary = e.summary || '-';
+          const receivedAt = e.receivedAt ? new Date(e.receivedAt).toLocaleTimeString() : '-';
+
+          const badgeClass = severity === 'critical' ? 'badge critical' : (severity === 'warning' ? 'badge warning' : 'badge');
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${status}</td>
+            <td>${e.alertname || '-'}</td>
+            <td><span class="${badgeClass}">${severity}</span></td>
+            <td>${summary}</td>
+            <td>${receivedAt}</td>
+          `;
+          historyBody.appendChild(tr);
+        }
+      }
+
+      async function refreshAll() {
+        document.getElementById('statusText').textContent = 'Veriler çekiliyor...';
+
+        const [mem, cpu, lat, err, log] = await Promise.all([
+          fetchSeries('anomaly_memory_target_bytes'),
+          fetchSeries('anomaly_cpu_percent'),
+          fetchSeries('anomaly_latency_ms'),
+          fetchSeries('anomaly_error_rate'),
+          fetchSeries('log_anomaly_rate')
+        ]);
+
+        memChart.data.labels = mem.timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString());
+        memChart.data.datasets[0].data = mem.values.map(v => Number(v));
+        cpuChart.data.labels = cpu.timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString());
+        cpuChart.data.datasets[0].data = cpu.values.map(v => Number(v));
+        latencyChart.data.labels = lat.timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString());
+        latencyChart.data.datasets[0].data = lat.values.map(v => Number(v));
+        errorChart.data.labels = err.timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString());
+        errorChart.data.datasets[0].data = err.values.map(v => Number(v));
+        logChart.data.labels = log.timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString());
+        logChart.data.datasets[0].data = log.values.map(v => Number(v));
+
+        memChart.update();
+        cpuChart.update();
+        latencyChart.update();
+        errorChart.update();
+        logChart.update();
+
+        const [alerts, history] = await Promise.all([fetchAlerts(), fetchHistory()]);
+        setAlertsTable(alerts);
+        setHistoryTable(history);
+        const ts = new Date().toLocaleTimeString();
+        document.getElementById('alertsUpdatedAt').textContent = `Son güncelleme: ${ts}`;
+        document.getElementById('historyUpdatedAt').textContent = `Son güncelleme: ${ts}`;
+
+        document.getElementById('statusText').textContent = 'Hazır.';
+      }
+
+      async function setTemplatesTable(templatesPayload) {
+        const body = document.getElementById('templatesBody');
+        body.innerHTML = '';
+        const templates = (templatesPayload && templatesPayload.templates) ? templatesPayload.templates : [];
+        if (!templates.length) {
+          body.innerHTML = '<tr><td colspan="5" class="muted">Henüz template yok (biraz bekle).</td></tr>';
+          return;
+        }
+
+        for (const t of templates) {
+          const cid = t.cluster_id;
+          const templateText = (t.template || '').toString();
+
+          const ann = await fetchAnnotation(cid);
+          const saved = ann && ann.annotation ? ann.annotation : null;
+
+          const tr = document.createElement('tr');
+          const noteVal = saved && saved.note ? saved.note : '';
+          const labelVal = saved && saved.label ? saved.label : '';
+
+          tr.innerHTML = `
+            <td>${cid}</td>
+            <td class="muted" style="max-width:700px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${templateText.replaceAll('"','&quot;')}">${templateText}</td>
+            <td>
+              <select data-cid="${cid}" class="tplLabel" style="background:rgba(255,255,255,0.06);color:#e6edf3;border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:6px 8px;">
+                <option value="" ${labelVal===''?'selected':''}>Seç</option>
+                <option value="normal" ${labelVal==='normal'?'selected':''}>normal</option>
+                <option value="anomaly" ${labelVal==='anomaly'?'selected':''}>anomaly</option>
+              </select>
+            </td>
+            <td>
+              <input data-cid="${cid}" class="tplNote" value="${noteVal.replaceAll('"','&quot;')}" placeholder="not" style="width:100%;min-width:180px;background:rgba(255,255,255,0.06);color:#e6edf3;border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:6px 8px;" />
+            </td>
+            <td>
+              <button data-cid="${cid}" class="tplSaveBtn">Kaydet</button>
+            </td>
+          `;
+          body.appendChild(tr);
+        }
+
+        // Save butonları
+        for (const btn of document.querySelectorAll('.tplSaveBtn')) {
+          btn.addEventListener('click', async (ev) => {
+            const cid = ev.target.getAttribute('data-cid');
+            const label = document.querySelector(`select.tplLabel[data-cid="${cid}"]`).value;
+            const note = document.querySelector(`input.tplNote[data-cid="${cid}"]`).value;
+            if (!label) {
+              alert('Label seçmelisin (normal/anomaly).');
+              return;
+            }
+            ev.target.disabled = true;
+            try {
+              await saveAnnotation(cid, label, note);
+            } catch (e) {
+              alert('Kaydetme hatası: ' + (e?.message || e));
+            } finally {
+              ev.target.disabled = false;
+            }
+          });
+        }
+      }
+
+      document.getElementById('reloadBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('reloadBtn');
+        btn.disabled = true;
+        try {
+          await refreshAll();
+        } catch (e) {
+          document.getElementById('statusText').textContent = 'Hata: ' + (e?.message || e);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('refreshTemplatesBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('refreshTemplatesBtn');
+        btn.disabled = true;
+        try {
+          const templates = await fetchTemplates();
+          await setTemplatesTable(templates);
+          document.getElementById('templatesUpdatedAt').textContent = `Son güncelleme: ${new Date().toLocaleTimeString()}`;
+        } catch (e) {
+          document.getElementById('statusText').textContent = 'Template yenileme hatası: ' + (e?.message || e);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      // 3 saniyede bir yenile
+      refreshAll().catch(() => {});
+      fetchTemplates()
+        .then(setTemplatesTable)
+        .then(() => {
+          document.getElementById('templatesUpdatedAt').textContent = `Son güncelleme: ${new Date().toLocaleTimeString()}`;
+        })
+        .catch(() => {});
+      setInterval(() => refreshAll().catch(() => {}), 3000);
+    </script>
+  </body>
+</html>
+

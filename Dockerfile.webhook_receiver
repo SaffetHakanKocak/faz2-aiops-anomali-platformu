@@ -1,0 +1,10 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY webhook_receiver.py /app/webhook_receiver.py
+
+ENV PORT=9001
+
+CMD ["python", "/app/webhook_receiver.py"]
+

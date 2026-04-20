@@ -1,0 +1,16 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir psutil
+
+COPY log_generator.py /app/log_generator.py
+
+ENV LOG_PATH=/data/app.log
+ENV CYCLE_PERIOD_SEC=30
+ENV ANOMALY_START_SEC=20
+ENV ANOMALY_END_SEC=30
+ENV LOG_INTERVAL_SEC=0.2
+
+CMD ["python", "/app/log_generator.py"]
+

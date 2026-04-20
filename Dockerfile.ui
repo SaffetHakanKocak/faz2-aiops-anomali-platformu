@@ -1,0 +1,14 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir fastapi uvicorn requests
+
+COPY ui_server.py /app/ui_server.py
+COPY annotation_store.py /app/annotation_store.py
+COPY ui /app/ui
+
+ENV PORT=4000
+
+CMD ["python", "/app/ui_server.py"]
+

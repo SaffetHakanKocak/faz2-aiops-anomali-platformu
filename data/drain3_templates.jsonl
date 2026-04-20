@@ -1,0 +1,10 @@
+{"ts": "2026-04-02T11:08:17.807691Z", "cluster_id": 1, "template": "2026-04-02T11:07:16.820231Z level=ERROR req_id=r-019543 method=GET route=/api/items status=502 latency_ms=644 exc=DiskFullError", "size": 1}
+{"ts": "2026-04-02T11:08:17.812911Z", "cluster_id": 2, "template": "2026-04-02T11:07:17.022263Z level=ERROR req_id=r-019544 method=GET route=/api/items status=503 latency_ms=1076 exc=OutOfMemoryError: Java heap space", "size": 1}
+{"ts": "2026-04-02T11:08:17.837583Z", "cluster_id": 3, "template": "2026-04-02T11:07:17.223614Z level=ERROR req_id=r-019545 method=GET route=/api/items status=500 latency_ms=838 exc=TimeoutError", "size": 1}
+{"ts": "2026-04-02T11:08:17.861522Z", "cluster_id": 4, "template": "2026-04-02T11:07:17.426593Z level=ERROR req_id=r-019546 method=GET route=/api/items status=503 latency_ms=337 exc=NullPointerException", "size": 1}
+{"ts": "2026-04-02T11:08:17.883827Z", "cluster_id": 5, "template": "2026-04-02T11:07:24.962443Z level=INFO req_id=r-019582 method=GET route=/api/items status=200 latency_ms=87 size_kb=118 bytes=1024", "size": 1}
+{"ts": "2026-04-09T10:05:11.419786Z", "cluster_id": 1, "template": "2026-04-02T09:54:54.792985Z level=INFO req_id=r-000000 method=GET route=/api/items status=200 latency_ms=96 size_kb=55 bytes=1024", "size": 1}
+{"ts": "2026-04-09T10:05:11.432084Z", "cluster_id": 2, "template": "2026-04-02T09:55:14.931480Z level=ERROR req_id=r-000095 method=GET route=/api/items status=502 latency_ms=1152 exc=DiskFullError", "size": 1}
+{"ts": "2026-04-09T10:05:11.453640Z", "cluster_id": 3, "template": "2026-04-02T09:55:15.332817Z level=ERROR req_id=r-000097 method=GET route=/api/items status=503 latency_ms=780 exc=OutOfMemoryError: Java heap space", "size": 1}
+{"ts": "2026-04-09T10:05:11.468912Z", "cluster_id": 4, "template": "2026-04-02T09:55:15.533453Z level=ERROR req_id=r-000098 method=GET route=/api/items status=500 latency_ms=797 exc=TimeoutError", "size": 1}
+{"ts": "2026-04-09T10:05:11.487074Z", "cluster_id": 5, "template": "2026-04-02T09:55:16.339842Z level=ERROR req_id=r-000102 method=GET route=/api/items status=503 latency_ms=548 exc=TimeoutError", "size": 1}

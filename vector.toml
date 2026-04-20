@@ -1,0 +1,26 @@
+[api]
+enabled = true
+address = "0.0.0.0:8686"
+
+[sources.app_log]
+type = "file"
+include = ["/data/app.log"]
+read_from = "beginning"
+ignore_older = 0
+
+[transforms.add_labels]
+type = "remap"
+inputs = ["app_log"]
+source = '''
+.service = "log_generator"
+.env = "local"
+'''
+
+[sinks.loki]
+type = "loki"
+inputs = ["add_labels"]
+endpoint = "http://loki:3100"
+encoding.codec = "text"
+labels.service = "{{ service }}"
+labels.env = "{{ env }}"
+
